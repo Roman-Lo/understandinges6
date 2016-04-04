@@ -238,3 +238,46 @@ for (let i = 0; i < 10; i++) {
 // i is not accessible here - throws an error
 console.log(i);
 ```
+
+在这个例子里，变量 `i` 仅存在于 `for` 循环内。一旦循环结束，该变量在其它地方不再能被访问。
+
+### 循环体内的函数
+
+由于 `var` 的特点，长期以来在函数体内创建函数都成了问题，因为循环体内的变量能够在外部被访问。且看如下代码：
+
+```js
+var funcs = [];
+
+for (var i = 0; i < 10; i++) {
+    funcs.push(function () { console.log(i); });
+}
+
+funcs.forEach(function (func) {
+   func();  // outputs the number "10" ten times 
+});
+```
+
+按常理来说，你应该期望这段代码会在控制台中输出0到9，但却是在一行内输出十次数字10。那是因为 `i` 在每一次循环迭代中都是被共享的，意味着在函数体内创建的函数都保存这同一变量的引用。变量 `i` 在循环结束后的值时 `10`，所以当 `console.log(i)` 被调用时，每一次都会输出这个值。
+
+为了修复这个问题，开发者通常在一个循环体内使用立即执行函数式（IIFEs）来强制复制创建那个迭代的变量，如以下例子所示：
+
+```js
+var funcs = [];
+
+for (var i = 0; i < 10; i++) {
+    funcs.push((function (value) {
+        return function () {
+            console.log(value);
+        }        
+    }(i)));
+}
+
+funcs.forEach(function (func) {
+    func();     // outputs 0, then 1, then 2, up to 9 
+});
+```
+
+这个方案用了函数体内的IIFE。变量 `i` 通过IIFE传递，这样的方式让 `i` 复制并创建一个新的值并存放在 `value` 里。这就是在当且迭代中被函数所使用的值，因此调用每一个函数会如期地返回0到9。幸好，在ECMAScript 6中的 `let` 和 `const` 的块级别绑定能帮你简化这个问题。
+
+### 循环体内的Let声明
+
